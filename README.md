@@ -1,13 +1,12 @@
-# Minecraft
+# Voxel World
 
-A **Minecraft** clone written in **Rust** :crab: and **Vulkan** :volcano: as a
-_hello world_ project with a reasonable scale.
+A **Voxel Game** written in **Rust** and **Vulkan** as a _hello world_ project with a reasonable scale.
 
 ## Progress
 
-- [x] Window
-- [x] Input handling
-- [x] Triangle
+- [ ] Window
+- [ ] Input handling
+- [ ] Triangle
 - [ ] Block
 - [ ] Camera
 - [ ] Textured block
