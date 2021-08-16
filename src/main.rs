@@ -1,21 +1,3 @@
-// Copyright (c) 2016 The vulkano developers
-// Licensed under the Apache License, Version 2.0
-// <LICENSE-APACHE or
-// https://www.apache.org/licenses/LICENSE-2.0> or the MIT
-// license <LICENSE-MIT or https://opensource.org/licenses/MIT>,
-// at your option. All files in the project carrying such
-// notice may not be copied, modified, or distributed except
-// according to those terms.
-
-// Welcome to the triangle example!
-//
-// This is the only example that is entirely detailed. All the other examples avoid code
-// duplication by using helper functions.
-//
-// This example assumes that you are already more or less familiar with graphics programming
-// and that you want to learn Vulkan. This means that for example it won't go into details about
-// what a vertex or a shader is.
-
 use std::sync::Arc;
 use vulkano::buffer::{BufferUsage, CpuAccessibleBuffer, TypedBufferAccess};
 use vulkano::command_buffer::{
@@ -40,43 +22,26 @@ use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
 
 fn main() {
-    // The first step of any Vulkan program is to create an instance.
-    //
-    // When we create an instance, we have to pass a list of extensions that we want to enable.
-    //
-    // All the window-drawing functionalities are part of non-core extensions that we need
-    // to enable manually. To do so, we ask the `vulkano_win` crate for the list of extensions
-    // required to draw to a window.
+    // Get the required device extensions
     let required_extensions = vulkano_win::required_extensions();
 
     // Now creating the instance.
     let instance = Instance::new(None, Version::V1_1, &required_extensions, None).unwrap();
 
-    // The objective of this example is to draw a triangle on a window. To do so, we first need to
-    // create the window.
-    //
-    // This is done by creating a `WindowBuilder` from the `winit` crate, then calling the
-    // `build_vk_surface` method provided by the `VkSurfaceBuild` trait from `vulkano_win`. If you
-    // ever get an error about `build_vk_surface` being undefined in one of your projects, this
-    // probably means that you forgot to import this trait.
-    //
-    // This returns a `vulkano::swapchain::Surface` object that contains both a cross-platform winit
-    // window and a cross-platform Vulkan surface that represents the surface of the window.
+    // Create the draw surface and main loop
     let event_loop = EventLoop::new();
     let surface = WindowBuilder::new()
         .build_vk_surface(&event_loop, instance.clone())
         .unwrap();
 
-    // Choose device extensions that we're going to use.
-    // In order to present images to a surface, we need a `Swapchain`, which is provided by the
-    // `khr_swapchain` extension.
+    // Choose device extensions that we're going to use
     let device_extensions = DeviceExtensions {
         khr_swapchain: true,
         ..DeviceExtensions::none()
     };
 
-    // We then choose which physical device to use. First, we enumerate all the available physical
-    // devices, then apply filters to narrow them down to those that can support our needs.
+    // First, we enumerate all the available physical devices, then apply filters to narrow them
+    // down to those that can support our needs.
     let (physical_device, queue_family) = PhysicalDevice::enumerate(&instance)
         .filter(|&p| {
             // Some devices may not support the extensions or features that your application, or
@@ -136,23 +101,7 @@ fn main() {
         physical_device.properties().device_type,
     );
 
-    // Now initializing the device. This is probably the most important object of Vulkan.
-    //
-    // We have to pass four parameters when creating a device:
-    //
-    // - Which physical device to connect to.
-    //
-    // - A list of optional features and extensions that our program needs to work correctly.
-    //   Some parts of the Vulkan specs are optional and must be enabled manually at device
-    //   creation. In this example the only thing we are going to need is the `khr_swapchain`
-    //   extension that allows us to draw to a window.
-    //
-    // - The list of queues that we are going to use. The exact parameter is an iterator whose
-    //   items are `(Queue, f32)` where the floating-point represents the priority of the queue
-    //   between 0.0 and 1.0. The priority of the queue is a hint to the implementation about how
-    //   much it should prioritize queues between one another.
-    //
-    // The iterator of created queues is returned by the function alongside the device.
+    // Initializing the device
     let (device, mut queues) = Device::new(
         physical_device,
         &Features::none(),
@@ -166,36 +115,21 @@ fn main() {
     )
         .unwrap();
 
-    // Since we can request multiple queues, the `queues` variable is in fact an iterator. We
-    // only use one queue in this example, so we just retrieve the first and only element of the
-    // iterator.
+    // Get a queue
     let queue = queues.next().unwrap();
 
-    // Before we can draw on the surface, we have to create what is called a swapchain. Creating
-    // a swapchain allocates the color buffers that will contain the image that will ultimately
-    // be visible on the screen. These images are returned alongside the swapchain.
+    // Creating a swapchain allocates the color buffers that will contain the image that will
+    // ultimately be visible on the screen. These images are returned alongside the swapchain.
     let (mut swapchain, images) = {
         // Querying the capabilities of the surface. When we create the swapchain we can only
         // pass values that are allowed by the capabilities.
         let caps = surface.capabilities(physical_device).unwrap();
 
-        // The alpha mode indicates how the alpha value of the final image will behave. For example,
-        // you can choose whether the window will be opaque or transparent.
+        // The alpha mode indicates how the alpha value of the final image will behave.
         let composite_alpha = caps.supported_composite_alpha.iter().next().unwrap();
 
         // Choosing the internal format that the images will have.
         let format = caps.supported_formats[0].0;
-
-        // The dimensions of the window, only used to initially setup the swapchain.
-        // NOTE:
-        // On some drivers the swapchain dimensions are specified by `caps.current_extent` and the
-        // swapchain size must use these dimensions.
-        // These dimensions are always the same as the window dimensions.
-        //
-        // However, other drivers don't specify a value, i.e. `caps.current_extent` is `None`
-        // These drivers will allow anything, but the only sensible value is the window dimensions.
-        //
-        // Both of these cases need the swapchain to use the window dimensions, so we just use that.
         let dimensions: [u32; 2] = surface.window().inner_size().into();
 
         // Please take a look at the docs for the meaning of the parameters we didn't mention.
@@ -237,14 +171,8 @@ fn main() {
     )
         .unwrap();
 
-    // The next step is to create the shaders.
-    //
-    // The raw shader creation API provided by the vulkano library is unsafe, for various reasons.
-    //
-    // An overview of what the `vulkano_shaders::shader!` macro generates can be found in the
-    // `vulkano-shaders` crate docs. You can view them at https://docs.rs/vulkano-shaders/
-    //
-    // TODO: explain this in details
+    // Make a shader
+    //TODO https://docs.rs/vulkano-shaders/
     mod vs {
         vulkano_shaders::shader! {
             ty: "vertex",
@@ -277,10 +205,6 @@ fn main() {
 
     let vs = vs::Shader::load(device.clone()).unwrap();
     let fs = fs::Shader::load(device.clone()).unwrap();
-
-    // At this point, OpenGL initialization would be finished. However in Vulkan it is not. OpenGL
-    // implicitly does a lot of computation whenever you draw. In Vulkan, you have to do all this
-    // manually.
 
     // The next step is to create a *render pass*, which is an object that describes where the
     // output of the graphics pipeline will go. It describes the layout of the images
@@ -316,8 +240,6 @@ fn main() {
             .unwrap(),
     );
 
-    // Before we draw we have to create what is called a pipeline. This is similar to an OpenGL
-    // program, but much more specific.
     let pipeline = Arc::new(
         GraphicsPipeline::start()
             // We need to indicate the layout of the vertices.
@@ -353,33 +275,9 @@ fn main() {
         reference: None,
     };
 
-    // The render pass we created above only describes the layout of our framebuffers. Before we
-    // can draw we also need to create the actual framebuffers.
-    //
-    // Since we need to draw to multiple images, we are going to create a different framebuffer for
-    // each image.
     let mut framebuffers =
         window_size_dependent_setup(&images, render_pass.clone(), &mut dynamic_state);
-
-    // Initialization is finally finished!
-
-    // In some situations, the swapchain will become invalid by itself. This includes for example
-    // when the window is resized (as the images of the swapchain will no longer match the
-    // window's) or, on Android, when the application went to the background and goes back to the
-    // foreground.
-    //
-    // In this situation, acquiring a swapchain image or presenting it will return an error.
-    // Rendering to an image of that swapchain will not produce any error, but may or may not work.
-    // To continue rendering, we need to recreate the swapchain by creating a new swapchain.
-    // Here, we remember that we need to do this for the next loop iteration.
     let mut recreate_swapchain = false;
-
-    // In the loop below we are going to submit commands to the GPU. Submitting a command produces
-    // an object that implements the `GpuFuture` trait, which holds the resources for as long as
-    // they are in use by the GPU.
-    //
-    // Destroying the `GpuFuture` blocks until the GPU is finished executing it. In order to avoid
-    // that, we store the submission of the previous frame here.
     let mut previous_frame_end = Some(sync::now(device.clone()).boxed());
 
     event_loop.run(move |event, _, control_flow| {
