@@ -1,15 +1,27 @@
-use std::sync::Arc;
-use vulkano::buffer::{BufferUsage, CpuAccessibleBuffer, TypedBufferAccess};
-use vulkano::command_buffer::{
-    AutoCommandBufferBuilder, CommandBufferUsage, DynamicState, SubpassContents,
+use vulkano::{
+    buffer::{
+        BufferUsage,
+        CpuAccessibleBuffer
+    },
+    command_buffer::{
+        AutoCommandBufferBuilder,
+        CommandBufferUsage,
+        DynamicState,
+        SubpassContents,
+    },
+    device::physical::{PhysicalDevice, PhysicalDeviceType},
+    device::{Device, DeviceExtensions, Features},
+    image::{ImageUsage, SwapchainImage},
+    pipeline::{
+        viewport::Viewport,
+        GraphicsPipeline,
+    },
+    image::view::ImageView,
+    instance::Instance,
 };
-use vulkano::device::physical::{PhysicalDevice, PhysicalDeviceType};
-use vulkano::device::{Device, DeviceExtensions, Features};
-use vulkano::image::view::ImageView;
-use vulkano::image::{ImageUsage, SwapchainImage};
-use vulkano::instance::Instance;
-use vulkano::pipeline::viewport::Viewport;
-use vulkano::pipeline::GraphicsPipeline;
+
+
+
 use vulkano::render_pass::{Framebuffer, FramebufferAbstract, RenderPass, Subpass};
 use vulkano::swapchain;
 use vulkano::swapchain::{AcquireError, Swapchain, SwapchainCreationError};
@@ -17,9 +29,23 @@ use vulkano::sync;
 use vulkano::sync::{FlushError, GpuFuture};
 use vulkano::Version;
 use vulkano_win::VkSurfaceBuild;
-use winit::event::{Event, WindowEvent};
-use winit::event_loop::{ControlFlow, EventLoop};
-use winit::window::{Window, WindowBuilder};
+use winit::{
+    event::{
+        Event,
+        WindowEvent,
+    },
+    event_loop::{
+        ControlFlow,
+        EventLoop,
+    },
+    window::{
+        Window,
+        WindowBuilder,
+        Fullscreen,
+    },
+};
+use std::sync::Arc;
+
 
 fn main() {
     // Get the required device extensions
@@ -31,6 +57,8 @@ fn main() {
     // Create the draw surface and main loop
     let event_loop = EventLoop::new();
     let surface = WindowBuilder::new()
+        .with_title("Voxel World")
+        .with_fullscreen(Option::from(Fullscreen::Borderless(Option::None)))
         .build_vk_surface(&event_loop, instance.clone())
         .unwrap();
 
@@ -157,7 +185,7 @@ fn main() {
         false,
         [
             Vertex {
-                position: [-0.5, -0.25],
+                position: [-0.5, 0.0],
             },
             Vertex {
                 position: [0.0, 0.5],
@@ -351,7 +379,7 @@ fn main() {
                 }
 
                 // Specify the color to clear the framebuffer with i.e. blue
-                let clear_values = vec![[0.0, 0.0, 1.0, 1.0].into()];
+                let clear_values = vec![[0.01, 0.01, 0.01, 1.0].into()];
 
                 // In order to draw, we have to build a *command buffer*. The command buffer object holds
                 // the list of commands that are going to be executed.
